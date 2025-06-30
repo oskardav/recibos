@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Recibos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #219653;
+        }
+        #reciboResult {
+            margin-top: 40px;
+            display: none;
+        }
+        .recibo {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header-recibo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo-recibo {
+            max-width: 150px;
+            margin: 0 auto 15px;
+            display: block;
+        }
+        .firma-recibo {
+            max-width: 150px;
+            margin: 40px auto 0;
+            display: block;
+        }
+        .datos-recibo {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .total-recibo {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 30px;
+            color: #2c3e50;
+        }
+        .download-btn {
+            background-color: #3498db;
+            margin-top: 20px;
+        }
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        .numero-recibo {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Recibos</h1>
+        
+        <div class="form-group">
+            <label for="logo">Logo (opcional):</label>
+            <input type="file" id="logo" accept="image/*">
+        </div>
+        
+        <div class="form-group">
+            <label for="emisor">Emisor:</label>
+            <input type="text" id="emisor" placeholder="Tu nombre o empresa">
+        </div>
+        
+        <div class="form-group">
+            <label for="receptor">Cliente:</label>
+            <input type="text" id="receptor" placeholder="Nombre del cliente">
+        </div>
+        
+        <div class="form-group">
+            <label for="concepto">Descripción del servicio/producto:</label>
+            <textarea id="concepto" placeholder="Describe detalladamente el servicio o producto"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="cantidad">Importe (L):</label>
+            <input type="number" id="cantidad" step="0.01" placeholder="Ej: 1250.50">
+        </div>
+        
+        <div class="form-group">
+            <label for="numeroRecibo">Número de Recibo:</label>
+            <input type="text" id="inputNumeroRecibo" placeholder="Ingrese el número de recibo">
+        </div>
+        
+        <div class="form-group">
+            <label for="firma">Firma digital (opcional):</label>
+            <input type="file" id="firma" accept="image/*">
+        </div>
+        
+        <button id="generarBtn">Generar Recibo</button>
+        
+        <div id="reciboResult">
+            <div class="recibo" id="reciboPDF">
+                <div class="header-recibo">
+                    <img id="logoPreview" class="logo-recibo" style="display: none;">
+                    <h2>RECIBO</h2>
+                    <div class="numero-recibo">
+                        <p>Número: <span id="numeroRecibo"></span></p>
+                        <p id="fechaRecibo"></p>
+                    </div>
+                </div>
+                
+                <div class="datos-recibo">
+                    <div>
+                        <h3>Emisor:</h3>
+                        <p id="emisorPreview"></p>
+                    </div>
+                    <div>
+                        <h3>Cliente:</h3>
+                        <p id="receptorPreview"></p>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Concepto:</h3>
+                    <p id="conceptoPreview"></p>
+                </div>
+                
+                <div class="total-recibo">
+                    <p>Total: <span id="cantidadPreview"></span> L</p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <h3>Firma:</h3>
+                    <img id="firmaPreview" class="firma-recibo" style="display: none;">
+                </div>
+            </div>
+            
+            <button id="downloadBtn" class="download-btn">Descargar Recibo PDF</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('generarBtn').addEventListener('click', generarRecibo);
+            document.getElementById('downloadBtn').addEventListener('click', descargarPDF);
+            
+            // Manejar imágenes
+            document.getElementById('logo').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const logoPreview = document.getElementById('logoPreview');
+                        logoPreview.src = event.target.result;
+                        logoPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+            
+            document.getElementById('firma').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const firmaPreview = document.getElementById('firmaPreview');
+                        firmaPreview.src = event.target.result;
+                        firmaPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        });
+
+        function generarRecibo() {
+            const emisor = document.getElementById('emisor').value.trim();
+            const receptor = document.getElementById('receptor').value.trim();
+            const concepto = document.getElementById('concepto').value.trim();
+            const cantidad = document.getElementById('cantidad').value;
+            const numeroRecibo = document.getElementById('inputNumeroRecibo').value.trim();
+            
+            if (!emisor || !receptor || !concepto || !cantidad || !numeroRecibo) {
+                alert('Por favor complete todos los campos obligatorios');
+                return;
+            }
+            
+            if (isNaN(cantidad) || parseFloat(cantidad) <= 0) {
+                alert('Ingrese un importe válido');
+                return;
+            }
+            
+            document.getElementById('emisorPreview').textContent = emisor;
+            document.getElementById('receptorPreview').textContent = receptor;
+            document.getElementById('conceptoPreview').textContent = concepto;
+            document.getElementById('cantidadPreview').textContent = parseFloat(cantidad).toFixed(2);
+            document.getElementById('numeroRecibo').textContent = numeroRecibo;
+            
+            const hoy = new Date();
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            document.getElementById('fechaRecibo').textContent = 'Fecha: ' + hoy.toLocaleDateString('es-ES', options);
+            
+            document.getElementById('reciboResult').style.display = 'block';
+            document.getElementById('reciboResult').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function descargarPDF() {
+            const element = document.getElementById('reciboPDF');
+            const promiseImages = [];
+            
+            // Verificar y esperar imágenes
+            const images = Array.from(element.getElementsByTagName('img')).filter(img => img.style.display !== 'none');
+            
+            images.forEach(img => {
+                if (!img.complete) {
+                    promiseImages.push(new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continúa incluso si hay error en imagen
+                    }));
+                }
+            });
+            
+            // Esperar a que todas las imágenes carguen o falle la carga
+            Promise.all(promiseImages).then(() => {
+                const opt = {
+                    margin: 15,
+                    filename: 'recibo.pdf',
+                    image: { 
+                        type: 'jpeg', 
+                        quality: 0.98 
+                    },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        scrollX: 0,
+                        scrollY: 0
+                    },
+                    jsPDF: { 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        orientation: 'portrait' 
+                    }
+                };
+                
+                // Pequeño retraso para asegurar el renderizado
+                setTimeout(() => {
+                    html2pdf().set(opt).from(element).save();
+                }, 200);
+            });
+        }
+    </script>
+</body>
+</html>
